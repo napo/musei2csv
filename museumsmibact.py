@@ -186,7 +186,6 @@ with open('musei.csv', 'wb') as csvfile:
         if (len(indirizzi) > 1):
             print "ci sono molti indirizzi"
         indirizzo = indirizzi[0]
-        print indirizzo.getchildren()
         tipo_indirizzo = ""
         if len(indirizzo.attrib) > 0:
             tipo_indirizzo = indirizzo.attrib[indirizzo.attrib.keys()[0]]
@@ -200,7 +199,7 @@ with open('musei.csv', 'wb') as csvfile:
             codistat_comune_indirizzo = indirizzo.find('comune').attrib['istat']
         cap_indirizzo = ""
         if (indirizzo.find('cap') != None):
-            comune_indirizzo = indirizzo.find('cap').text
+            cap_indirizzo = indirizzo.find('cap').text
         provincia_indirizzo = ""
         codistat_provincia_indirizzo = ""
         if (indirizzo.find('provincia') != None):
