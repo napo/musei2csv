@@ -2,14 +2,15 @@ import urllib2
 from lxml import etree
 import csv
 import django.utils.encoding as djenc
+filename="luoghicultura.csv"
 url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&quantita=1&offset=0"
-url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&quantita=1&offset=0"
+#url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&quantita=1&offset=0"
 
 xml = urllib2.urlopen(url)
 root = etree.parse(xml)
 totmuseums = int(root.getroot().attrib['totale'])
 print totmuseums
-limit = 100
+limit = 1000
 steps=totmuseums/limit
 
 
@@ -23,20 +24,20 @@ for s in range(steps):
     idx.append(s*limit)
 step = 0
 
+with open(filename, 'wb') as csvfile:
+    museiwriter = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    museiwriter.writerow(["nome","indirizzo","comune","provincia","cap","sitoweb","latitudine","longitudine"])
+
 for i in idx:
     index = idx.index(i)
     print index    
     url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&offset=%s" % (index) 
-    #url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&offset=0&quantita=1000" 
-    
+#    url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&offset=%s&quantita=1000" % (index)      
     xml = urllib2.urlopen(url)
     docxml = etree.parse(xml).findall("mibac")
-    filename = "musei%s.csv" % (index) 
-    with open(filename, 'wb') as csvfile:
+    with open(filename, 'a') as csvfile:
         museiwriter = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        #museiwriter.writerow(["nome","indirizzo","comune","provincia","cap","sitoweb","latitudine","longitudine"])
         for mibac in docxml:
-            print step
             writerow = []
             metainfo = mibac.find('metainfo')
             stato = ''
@@ -219,9 +220,9 @@ for i in idx:
                 latitudine = indirizzo.find('cartografia/punto/latitudineX').text
                 longitudine = indirizzo.find('cartografia/punto/longitudineY').text
             links = luogodellacultura.find("links")
-            #print links.getchildren()
+            print links.getchildren()
             allegati = luogodellacultura.find("allegati")
-            #print allegati.getchildren()
+            print allegati.getchildren()
             step += 1
             if (longitudine != ""):
                 writerow.append(djenc.smart_str(nome))        
