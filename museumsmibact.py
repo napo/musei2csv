@@ -5,7 +5,7 @@ import django.utils.encoding as djenc
 from pyspatialite import dbapi2 as db
  
 filename="luoghicultura.csv"
-dbfile="culturalplaces.sqlite"
+dbfile="luoghicultura.sqlite"
 #MUSEI url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&quantita=1&offset=0"
 url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&quantita=1&offset=0"
 
@@ -13,8 +13,7 @@ xml = urllib2.urlopen(url)
 root = etree.parse(xml)
 totmuseums = int(root.getroot().attrib['totale'])
 print totmuseums
-totmuseums = 1
-limit = 1 #00
+limit = 1000
 steps=totmuseums/limit
 
 
@@ -94,9 +93,8 @@ longitudine TEXT);
 '''
 cur.execute(sql)
 
-sql = "SELECT AddGeometryColumn('POINT'," 
+sql = "SELECT AddGeometryColumn('luoghi'," 
 sql += "'geom', 4326, 'POINT', 'XY')"
-print sql
 cur.execute(sql)
 
 
@@ -248,7 +246,7 @@ for i in idx:
                 descrizione = luogodellacultura.find("descrizione/testostandard").text
                 traduzioni = luogodellacultura.find("descrizione/traduzioni").getchildren()
                 if len(traduzioni) > 0:
-                    for traduzione in luogodellacultura.find("denominazione/traduzioni").getchildren():
+                    for traduzione in luogodellacultura.find("descrizione/traduzioni").getchildren():
                         print "%s => %s" % (traduzione.attrib,traduzione.text)
                         #FARE LA INSERT
             info = luogodellacultura.find("info")
@@ -262,15 +260,27 @@ for i in idx:
                         for traduzione in orario_traduzioni:
                             print "%s => %s" % (traduzione.attrib,traduzione.text)
                             #FARE LA INSERT
-                responsabile = info.find("responsabile").text
-                accessibilita = info.find("accessibilita").text
-                sitoweb = info.find("sitoweb").text
-                email = info.find("email").text
+                responsabile = ""
+                if info.find("responsabile") != None:
+                    responsabile = info.find("responsabile").text
+                accessibilita = ""
+                if info.find("accessibilita") != None:
+                    accessibilita = str(info.find("accessibilita").text)
+                    ins_accessibilita = accessibilita.replace("'","''")
+                sitoweb = ""
+                if info.find("sitoweb") != None:
+                    sitoweb = info.find("sitoweb").text
+                email = ""
+                if info.find("email") != None:
+                    email = info.find("email").text
                 email_certificata = ""
-                email_certificata = info.find("email-certificata").text
-                telefono = info.find("telefono/testostandard").text
-                telefono_traduzioni = info.find("telefono/traduzioni").getchildren()
-               
+                if info.find("email-certificata") != None:
+                    email_certificata = info.find("email-certificata").text
+                telefono = ""
+                if info.find("telefono") != None:
+                    telefono = info.find("telefono/testostandard").text
+                    
+                telefono_traduzioni = info.find("telefono/traduzioni").getchildren()               
                 if (len(telefono_traduzioni) > 0):
                     for traduzione in telefono_traduzioni:
                         print "%s => %s" % (traduzione.attrib,traduzione.text)
@@ -452,11 +462,9 @@ for i in idx:
                 writerow.append(djenc.smart_str(longitudine_default))
                 museiwriter.writerow(writerow)
 
-            print latitudine
-            print longitudine
             geom = "GeomFromText('POINT("
-            geom += "%f " % (float(longitudine))
-            geom += "%f" % (float(latitudine))
+            geom += "%s " % (str(longitudine))
+            geom += "%s" % (str(latitudine))
             geom += ")', 4326)"
             sql = '''INSERT INTO luoghi (
             codice_dbunico2, stato, nomeRedattore, nomeCapoRedattore, 
@@ -468,7 +476,7 @@ for i in idx:
             entegestore, ruolo_entegestore, codice_entegestore_dbunico20, codice_entegestore_mibac, telefono_biglietteria,
             fax_biglietteria, email_biglietteria, costo_biglietto, riduzioni_biglietto, orario_biglietteria,
             tipo_prenotazioni, prenotazioni_sitoweb, prenotazioni_email, prenotazioni_telefono, indirizzo,
-            comune, localita, provincia, regione, istat_regione, istat_provincia, istat_comune, cap, latitudine, longitudine,geom)
+            comune, localita, provincia, regione, istat_regione, istat_provincia, istat_comune, cap, latitudine, longitudine,geom
             ) VALUES (
             '''
             sql += '''%i, '%s', '%s', '%s','%s', '%s', '%s', 
@@ -479,19 +487,32 @@ for i in idx:
             '%s', '%s', '%s', '%s', '%s',
             '%s', '%s', '%s', '%s', '%s',
             '%s', '%s', '%s', '%s', '%s',
-            '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s','%s');''' % \
-            (codice_dbunico2, stato, nomeRedattore, nomeCapoRedattore, dataValidazione, \
-            dataUltimaModifica, datacreazionexml, sorgente, tipologiaprevalente, categoriaprevalente, \
-            proprieta, nome, descrizione, orario, responsabile, accessibilita, sitoweb,\
-            email, email_certificata, telefono, chiusurasettimanale,\
-            entecompetente, ruolo_entecompetente, codice_entecompetente_dbunico20, \
-            codice_entecompetente_mibac, entegestore, ruolo_entegestore, codice_entegestore_dbunico20, \
-            codice_entegestore_mibac, telefono_biglietteria,fax_biglietteria, email_biglietteria, \
-            costo_biglietto, riduzioni_biglietto, orario_biglietteria, tipo_prenotazioni, \
-            prenotazioni_sitoweb, prenotazioni_email, prenotazioni_telefono, via_indirizzo_default, \
-            comune_indirizzo_default, localita_indirizzo_default, provincia_indirizzo_default, \
-            regione_indirizzo_default, istat_regione_default, istat_provincia_default, istat_comune_default, \
-            cap_indirizzo_default, str(latitudine_default), str(longitudine_default),geom)
+            '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',%s);''' % \
+            (int(codice_dbunico2), djenc.smart_str(stato), djenc.smart_str(nomeRedattore).replace("'","''"), djenc.smart_str(nomeCapoRedattore).replace("'","''"), \
+            dataValidazione, \
+            dataUltimaModifica, datacreazionexml, djenc.smart_str(sorgente).replace("'","''"), \
+            djenc.smart_str(tipologiaprevalente).replace("'","''"), djenc.smart_str(categoriaprevalente), \
+            djenc.smart_str(proprieta).replace("'","''"), djenc.smart_str(nome).replace("'","''"), djenc.smart_str(descrizione).replace("'","''"), \
+            djenc.smart_str(orario).replace("'","''"), djenc.smart_str(responsabile).replace("'","''"), djenc.smart_str(accessibilita).replace("'","''"), \
+            djenc.smart_str(sitoweb).replace("'","''"),\
+            djenc.smart_str(email).replace("'","''"), djenc.smart_str(email_certificata).replace("'","''"), djenc.smart_str(telefono).replace("'","''"), \
+            djenc.smart_str(chiusurasettimanale).replace("'","''"),\
+            djenc.smart_str(entecompetente).replace("'","''"), djenc.smart_str(ruolo_entecompetente).replace("'","''"), \
+            djenc.smart_str(codice_entecompetente_dbunico20).replace("'","''"), \
+            djenc.smart_str(codice_entecompetente_mibac).replace("'","''"), djenc.smart_str(entegestore).replace("'","''"), djenc.smart_str(ruolo_entegestore).replace("'","''"), \
+            djenc.smart_str(codice_entegestore_dbunico20).replace("'","''"), \
+            djenc.smart_str(codice_entegestore_mibac).replace("'","''"), djenc.smart_str(telefono_biglietteria).replace("'","''"),\
+            djenc.smart_str(fax_biglietteria).replace("'","''"), djenc.smart_str(email_biglietteria).replace("'","''"), \
+            djenc.smart_str(costo_biglietto).replace("'","''"), djenc.smart_str(riduzioni_biglietto).replace("'","''"), \
+            djenc.smart_str(orario_biglietteria).replace("'","''"), djenc.smart_str(tipo_prenotazioni).replace("'","''"), \
+            djenc.smart_str(prenotazioni_sitoweb).replace("'","''"), djenc.smart_str(prenotazioni_email).replace("'","''"), \
+            djenc.smart_str(prenotazioni_telefono).replace("'","''"), djenc.smart_str(via_indirizzo_default).replace("'","''"), \
+            djenc.smart_str(comune_indirizzo_default).replace("'","''"), djenc.smart_str(localita_indirizzo_default).replace("'","''"), \
+            djenc.smart_str(provincia_indirizzo_default).replace("'","''"), \
+            djenc.smart_str(regione_indirizzo_default).replace("'","''"), djenc.smart_str(istat_regione_default).replace("'","''"), \
+            djenc.smart_str(istat_provincia_default).replace("'","''"), djenc.smart_str(istat_comune_default).replace("'","''"), \
+            djenc.smart_str(cap_indirizzo_default).replace("'","''"), str(latitudine_default), str(longitudine_default),\
+            geom)
             print sql
             cur.execute(sql)
             conn.commit()
