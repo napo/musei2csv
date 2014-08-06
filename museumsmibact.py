@@ -462,60 +462,63 @@ for i in idx:
                 writerow.append(djenc.smart_str(longitudine_default))
                 museiwriter.writerow(writerow)
 
-            geom = "GeomFromText('POINT("
-            geom += "%s " % (str(longitudine))
-            geom += "%s" % (str(latitudine))
-            geom += ")', 4326)"
-            sql = '''INSERT INTO luoghi (
-            codice_dbunico2, stato, nomeRedattore, nomeCapoRedattore, 
-            dataValidazione, dataUltimaModifica, datacreazionexml, 
-            sorgente, tipologia, categoria, proprieta, nome, descrizione, 
-            orario, responsabile, accessibilita, sitoweb,
-            email, email_certificata, telefono, chiusurasettimanale,
-            entecompetente, ruolo_entecompetente, codice_entecompetente_dbunico20, codice_entecompetente_mibac,
-            entegestore, ruolo_entegestore, codice_entegestore_dbunico20, codice_entegestore_mibac, telefono_biglietteria,
-            fax_biglietteria, email_biglietteria, costo_biglietto, riduzioni_biglietto, orario_biglietteria,
-            tipo_prenotazioni, prenotazioni_sitoweb, prenotazioni_email, prenotazioni_telefono, indirizzo,
-            comune, localita, provincia, regione, istat_regione, istat_provincia, istat_comune, cap, latitudine, longitudine,geom
-            ) VALUES (
-            '''
-            sql += '''%i, '%s', '%s', '%s','%s', '%s', '%s', 
-            '%s', '%s','%s', '%s','%s','%s', 
-            '%s','%s', '%s','%s',
-            '%s', '%s','%s','%s',
-            '%s', '%s', '%s', '%s',
-            '%s', '%s', '%s', '%s', '%s',
-            '%s', '%s', '%s', '%s', '%s',
-            '%s', '%s', '%s', '%s', '%s',
-            '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',%s);''' % \
-            (int(codice_dbunico2), djenc.smart_str(stato), djenc.smart_str(nomeRedattore).replace("'","''"), djenc.smart_str(nomeCapoRedattore).replace("'","''"), \
-            dataValidazione, \
-            dataUltimaModifica, datacreazionexml, djenc.smart_str(sorgente).replace("'","''"), \
-            djenc.smart_str(tipologiaprevalente).replace("'","''"), djenc.smart_str(categoriaprevalente), \
-            djenc.smart_str(proprieta).replace("'","''"), djenc.smart_str(nome).replace("'","''"), djenc.smart_str(descrizione).replace("'","''"), \
-            djenc.smart_str(orario).replace("'","''"), djenc.smart_str(responsabile).replace("'","''"), djenc.smart_str(accessibilita).replace("'","''"), \
-            djenc.smart_str(sitoweb).replace("'","''"),\
-            djenc.smart_str(email).replace("'","''"), djenc.smart_str(email_certificata).replace("'","''"), djenc.smart_str(telefono).replace("'","''"), \
-            djenc.smart_str(chiusurasettimanale).replace("'","''"),\
-            djenc.smart_str(entecompetente).replace("'","''"), djenc.smart_str(ruolo_entecompetente).replace("'","''"), \
-            djenc.smart_str(codice_entecompetente_dbunico20).replace("'","''"), \
-            djenc.smart_str(codice_entecompetente_mibac).replace("'","''"), djenc.smart_str(entegestore).replace("'","''"), djenc.smart_str(ruolo_entegestore).replace("'","''"), \
-            djenc.smart_str(codice_entegestore_dbunico20).replace("'","''"), \
-            djenc.smart_str(codice_entegestore_mibac).replace("'","''"), djenc.smart_str(telefono_biglietteria).replace("'","''"),\
-            djenc.smart_str(fax_biglietteria).replace("'","''"), djenc.smart_str(email_biglietteria).replace("'","''"), \
-            djenc.smart_str(costo_biglietto).replace("'","''"), djenc.smart_str(riduzioni_biglietto).replace("'","''"), \
-            djenc.smart_str(orario_biglietteria).replace("'","''"), djenc.smart_str(tipo_prenotazioni).replace("'","''"), \
-            djenc.smart_str(prenotazioni_sitoweb).replace("'","''"), djenc.smart_str(prenotazioni_email).replace("'","''"), \
-            djenc.smart_str(prenotazioni_telefono).replace("'","''"), djenc.smart_str(via_indirizzo_default).replace("'","''"), \
-            djenc.smart_str(comune_indirizzo_default).replace("'","''"), djenc.smart_str(localita_indirizzo_default).replace("'","''"), \
-            djenc.smart_str(provincia_indirizzo_default).replace("'","''"), \
-            djenc.smart_str(regione_indirizzo_default).replace("'","''"), djenc.smart_str(istat_regione_default).replace("'","''"), \
-            djenc.smart_str(istat_provincia_default).replace("'","''"), djenc.smart_str(istat_comune_default).replace("'","''"), \
-            djenc.smart_str(cap_indirizzo_default).replace("'","''"), str(latitudine_default), str(longitudine_default),\
-            geom)
-            print sql
-            cur.execute(sql)
-            conn.commit()
+
+            sql = 'select count(codice_dbunico2) from luoghi where codice_dbunico2 = %i;' % int(codice_dbunico2)
+            rs = cur.execute(sql)
+            if (rs.fetchall()[0][0] == 0):
+                geom = "GeomFromText('POINT("
+                geom += "%s " % (str(longitudine))
+                geom += "%s" % (str(latitudine))
+                geom += ")', 4326)"
+                sql = '''INSERT INTO luoghi (
+                codice_dbunico2, stato, nomeRedattore, nomeCapoRedattore, 
+                dataValidazione, dataUltimaModifica, datacreazionexml, 
+                sorgente, tipologia, categoria, proprieta, nome, descrizione, 
+                orario, responsabile, accessibilita, sitoweb,
+                email, email_certificata, telefono, chiusurasettimanale,
+                entecompetente, ruolo_entecompetente, codice_entecompetente_dbunico20, codice_entecompetente_mibac,
+                entegestore, ruolo_entegestore, codice_entegestore_dbunico20, codice_entegestore_mibac, telefono_biglietteria,
+                fax_biglietteria, email_biglietteria, costo_biglietto, riduzioni_biglietto, orario_biglietteria,
+                tipo_prenotazioni, prenotazioni_sitoweb, prenotazioni_email, prenotazioni_telefono, indirizzo,
+                comune, localita, provincia, regione, istat_regione, istat_provincia, istat_comune, cap, latitudine, longitudine,geom
+                ) VALUES (
+                '''
+                sql += '''%i, '%s', '%s', '%s','%s', '%s', '%s', 
+                '%s', '%s','%s', '%s','%s','%s', 
+                '%s','%s', '%s','%s',
+                '%s', '%s','%s','%s',
+                '%s', '%s', '%s', '%s',
+                '%s', '%s', '%s', '%s', '%s',
+                '%s', '%s', '%s', '%s', '%s',
+                '%s', '%s', '%s', '%s', '%s',
+                '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',%s);''' % \
+                (int(codice_dbunico2), djenc.smart_str(stato), djenc.smart_str(nomeRedattore).replace("'","''"), djenc.smart_str(nomeCapoRedattore).replace("'","''"), \
+                dataValidazione, \
+                dataUltimaModifica, datacreazionexml, djenc.smart_str(sorgente).replace("'","''"), \
+                djenc.smart_str(tipologiaprevalente).replace("'","''"), djenc.smart_str(categoriaprevalente), \
+                djenc.smart_str(proprieta).replace("'","''"), djenc.smart_str(nome).replace("'","''"), djenc.smart_str(descrizione).replace("'","''"), \
+                djenc.smart_str(orario).replace("'","''"), djenc.smart_str(responsabile).replace("'","''"), djenc.smart_str(accessibilita).replace("'","''"), \
+                djenc.smart_str(sitoweb).replace("'","''"),\
+                djenc.smart_str(email).replace("'","''"), djenc.smart_str(email_certificata).replace("'","''"), djenc.smart_str(telefono).replace("'","''"), \
+                djenc.smart_str(chiusurasettimanale).replace("'","''"),\
+                djenc.smart_str(entecompetente).replace("'","''"), djenc.smart_str(ruolo_entecompetente).replace("'","''"), \
+                djenc.smart_str(codice_entecompetente_dbunico20).replace("'","''"), \
+                djenc.smart_str(codice_entecompetente_mibac).replace("'","''"), djenc.smart_str(entegestore).replace("'","''"), djenc.smart_str(ruolo_entegestore).replace("'","''"), \
+                djenc.smart_str(codice_entegestore_dbunico20).replace("'","''"), \
+                djenc.smart_str(codice_entegestore_mibac).replace("'","''"), djenc.smart_str(telefono_biglietteria).replace("'","''"),\
+                djenc.smart_str(fax_biglietteria).replace("'","''"), djenc.smart_str(email_biglietteria).replace("'","''"), \
+                djenc.smart_str(costo_biglietto).replace("'","''"), djenc.smart_str(riduzioni_biglietto).replace("'","''"), \
+                djenc.smart_str(orario_biglietteria).replace("'","''"), djenc.smart_str(tipo_prenotazioni).replace("'","''"), \
+                djenc.smart_str(prenotazioni_sitoweb).replace("'","''"), djenc.smart_str(prenotazioni_email).replace("'","''"), \
+                djenc.smart_str(prenotazioni_telefono).replace("'","''"), djenc.smart_str(via_indirizzo_default).replace("'","''"), \
+                djenc.smart_str(comune_indirizzo_default).replace("'","''"), djenc.smart_str(localita_indirizzo_default).replace("'","''"), \
+                djenc.smart_str(provincia_indirizzo_default).replace("'","''"), \
+                djenc.smart_str(regione_indirizzo_default).replace("'","''"), djenc.smart_str(istat_regione_default).replace("'","''"), \
+                djenc.smart_str(istat_provincia_default).replace("'","''"), djenc.smart_str(istat_comune_default).replace("'","''"), \
+                djenc.smart_str(cap_indirizzo_default).replace("'","''"), str(latitudine_default), str(longitudine_default),\
+                geom)
+                cur.execute(sql)
+                conn.commit()
 conn.close()
 quit()
 
