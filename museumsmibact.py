@@ -2,15 +2,19 @@ import urllib2
 from lxml import etree
 import csv
 import django.utils.encoding as djenc
+from pyspatialite import dbapi2 as db
+ 
 filename="luoghicultura.csv"
-url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&quantita=1&offset=0"
-#url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&quantita=1&offset=0"
+dbfile="culturalplaces.sqlite"
+#MUSEI url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&quantita=1&offset=0"
+url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&quantita=1&offset=0"
 
 xml = urllib2.urlopen(url)
 root = etree.parse(xml)
 totmuseums = int(root.getroot().attrib['totale'])
 print totmuseums
-limit = 1000
+totmuseums = 1
+limit = 1 #00
 steps=totmuseums/limit
 
 
@@ -28,11 +32,161 @@ with open(filename, 'wb') as csvfile:
     museiwriter = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     museiwriter.writerow(["nome","indirizzo","comune","provincia","cap","sitoweb","latitudine","longitudine"])
 
+
+#spatialite
+conn = db.connect(dbfile)
+cur = conn.cursor()
+sql = 'SELECT InitSpatialMetadata()'
+cur.execute(sql)
+# table of locations
+sql = '''
+CREATE TABLE luoghi (
+codice_dbunico2 INTEGER NOT NULL PRIMARY KEY,
+stato TEXT,
+nomeRedattore TEXT,
+nomeCapoRedattore TEXT,
+dataValidazione TEXT,
+dataUltimaModifica TEXT,
+datacreazionexml TEXT,
+sorgente TEXT,
+tipologia TEXT,
+categoria TEXT,
+proprieta TEXT,
+nome TEXT NOT NULL,
+descrizione TEXT,
+orario TEXT,
+responsabile TEXT,
+accessibilita TEXT,
+sitoweb TEXT,
+email TEXT,
+email_certificata TEXT,
+telefono TEXT,
+chiusurasettimanale TEXT,
+entecompetente TEXT,
+ruolo_entecompetente TEXT,
+codice_entecompetente_dbunico20 TEXT,
+codice_entecompetente_mibac TEXT,
+entegestore TEXT,
+ruolo_entegestore TEXT,
+codice_entegestore_dbunico20 TEXT,
+codice_entegestore_mibac TEXT,
+telefono_biglietteria TEXT,
+fax_biglietteria TEXT,
+email_biglietteria TEXT,
+costo_biglietto TEXT,
+riduzioni_biglietto TEXT,
+orario_biglietteria TEXT,
+tipo_prenotazioni TEXT,
+prenotazioni_sitoweb TEXT,
+prenotazioni_email TEXT,
+prenotazioni_telefono TEXT,
+indirizzo TEXT,
+comune TEXT,
+localita TEXT,
+provincia TEXT,
+regione TEXT,
+istat_regione TEXT,
+istat_provincia TEXT,
+istat_comune TEXT,
+cap TEXT,
+latitudine TEXT,
+longitudine TEXT);
+'''
+cur.execute(sql)
+
+sql = "SELECT AddGeometryColumn('POINT'," 
+sql += "'geom', 4326, 'POINT', 'XY')"
+print sql
+cur.execute(sql)
+
+
+
+sql = '''
+CREATE TABLE indirizzi (
+codice_dbunico2 INTEGER NOT NULL,
+indirizzo TEXT,
+comune TEXT,
+localita TEXT,
+provincia TEXT,
+regione TEXT,
+istat_regione TEXT,
+istat_provincia TEXT,
+istat_comune TEXT,
+cap TEXT,
+latitudine TEXT,
+longitudine TEXT);
+'''
+cur.execute(sql)
+
+
+sql = '''
+CREATE TABLE tipologie (
+codice_dbunico2 INTEGER NOT NULL,
+tipo TEXT,
+testo TEXT);
+'''
+cur.execute(sql)
+
+sql = '''
+CREATE TABLE categorie (
+codice_dbunico2 INTEGER NOT NULL,
+categoria TEXT,
+testo TEXT);
+'''
+cur.execute(sql)
+
+sql = '''
+CREATE TABLE sinomimi (
+codice_dbunico2 INTEGER NOT NULL,
+sinomimo TEXT);
+'''
+cur.execute(sql)
+
+sql = '''
+CREATE TABLE traduzioni_descrizioni (
+codice_dbunico2 INTEGER NOT NULL,
+descrizione TEXT,
+lingua TEXT);
+'''
+cur.execute(sql)
+
+sql = '''
+CREATE TABLE traduzioni_orario (
+codice_dbunico2 INTEGER NOT NULL,
+orario TEXT,
+lingua TEXT);
+'''
+cur.execute(sql)
+
+sql = '''
+CREATE TABLE traduzioni_telefono (
+codice_dbunico2 INTEGER NOT NULL,
+telefono TEXT,
+lingua TEXT);
+'''
+cur.execute(sql)
+
+sql = '''
+CREATE TABLE traduzioni_fax (
+codice_dbunico2 INTEGER NOT NULL,
+fax TEXT,
+lingua TEXT);
+'''
+cur.execute(sql)
+
+sql = '''
+CREATE TABLE contenitori (
+codice_dbunico2 INTEGER NOT NULL,
+contenitore TEXT,
+tipo TEXT);
+'''
+cur.execute(sql)
+
+
 for i in idx:
-    index = idx.index(i)
-    print index    
+    index = idx.index(i)   
     url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&offset=%s" % (index) 
-#    url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&offset=%s&quantita=1000" % (index)      
+#musei    url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&offset=%s&quantita=1000" % (index)      
     xml = urllib2.urlopen(url)
     docxml = etree.parse(xml).findall("mibac")
     with open(filename, 'a') as csvfile:
@@ -65,26 +219,38 @@ for i in idx:
             if (metainfo.find('sorgente') != None):
                 datacreazionexml = metainfo.find('sorgente').text
             luogodellacultura = mibac.find("luogodellacultura")
-            codice = luogodellacultura.find("identificatore/codice").text
+            codici = luogodellacultura.find("identificatore").getchildren()
+            codice_dbunico2 = ''
+            for codice in codici:
+                if codice.attrib['sorgente'] == 'DBUnico 2.0':
+                    codice_dbunico2 = codice.text
             tipologiaprevalente = luogodellacultura.find("tipologie").attrib['tipologiaPrevalente']
             if (len(luogodellacultura.find("tipologie").attrib)) > 1:
-                print "altre tipologie"
+                for tipologia in luogodellacultura.find("tipologie").getchildren():
+                    print "%s => %s" % (tipologia.attrib,tipologia.text)
+                    #FARE LA INSERT
             categoriaprevalente = luogodellacultura.find("categorie").attrib['categoriaPrevalente']
             if (len(luogodellacultura.find("categorie").attrib)) > 1:
-                print "altre categorie"
+                for categoria in luogodellacultura.find("categorie").getchildren():
+                    print "%s => %s" % (categoria.attrib,categoria.text)
+                    #FARE LA INSERT
             proprieta = luogodellacultura.find("proprieta").text
             nomestandard = luogodellacultura.find("denominazione/nomestandard").text
             nome = nomestandard.replace('"','')        
             sinomimi = luogodellacultura.find("denominazione/sinonimi").getchildren()
+            
             if len(sinomimi) > 0:
-                print "altri sinomimi" 
+                for sinonimo in luogodellacultura.find("denominazione/sinonimi").getchildren():
+                    print "%s => %s" % (sinonimo.attrib,sinonimo.text)
+                    #FARE LA INSERT
             descrizione = ''
             if (luogodellacultura.find("descrizione/testostandard") != None):
                 descrizione = luogodellacultura.find("descrizione/testostandard").text
                 traduzioni = luogodellacultura.find("descrizione/traduzioni").getchildren()
                 if len(traduzioni) > 0:
-                    print "altre traduzioni"
-    
+                    for traduzione in luogodellacultura.find("denominazione/traduzioni").getchildren():
+                        print "%s => %s" % (traduzione.attrib,traduzione.text)
+                        #FARE LA INSERT
             info = luogodellacultura.find("info")
             orario = ""
             orario_traduzioni = ""
@@ -93,7 +259,9 @@ for i in idx:
                     orario = info.find("orario/testostandard").text
                     orario_traduzioni = info.find("orario/traduzioni").getchildren()
                     if (len(orario_traduzioni) > 0):
-                        print "orario multilingue"
+                        for traduzione in orario_traduzioni:
+                            print "%s => %s" % (traduzione.attrib,traduzione.text)
+                            #FARE LA INSERT
                 responsabile = info.find("responsabile").text
                 accessibilita = info.find("accessibilita").text
                 sitoweb = info.find("sitoweb").text
@@ -102,18 +270,30 @@ for i in idx:
                 email_certificata = info.find("email-certificata").text
                 telefono = info.find("telefono/testostandard").text
                 telefono_traduzioni = info.find("telefono/traduzioni").getchildren()
-                if (len(telefono_traduzioni)) > 0:
-                    print "altre traduzioni telefono"
+               
+                if (len(telefono_traduzioni) > 0):
+                    for traduzione in telefono_traduzioni:
+                        print "%s => %s" % (traduzione.attrib,traduzione.text)
+                        #FARE LA INSERT
                 fax = info.find("fax/testostandard").text
                 fax_traduzioni = info.find("fax/traduzioni").getchildren()
+                
                 if (len(fax_traduzioni)) > 0:
-                    print "altre traduzioni fax" 
+                    for traduzione in fax_traduzioni:
+                        print "%s => %s" % (traduzione.attrib,traduzione.text)
+                        #FARE LA INSERT
+                chiusurasettimanale = ''        
                 if (info.find("chiusuraSettimanale/testostandard") != None):
                     chiusurasettimanale = info.find("chiusuraSettimanale/testostandard").text
                     chiusurasettimanale_traduzioni = info.find("chiusuraSettimanale/traduzioni").getchildren()
                     if (len(chiusurasettimanale_traduzioni)) > 0:
-                        print "altre traduzioni chiusuraSettimanale" 
-    
+                        for traduzione in chiusurasettimanale_traduzioni:
+                            print "%s => %s" % (traduzione.attrib,traduzione.text)
+            
+            entecompetente = ''
+            ruolo_entecompetente = ''
+            codice_entecompetente_dbunico20 = ''
+            codice_entecompetente_mibac = ''
             if (luogodellacultura.find("enteCompetente") != None):
                 entecompetente = luogodellacultura.find("enteCompetente/denominazione").text
                 ruolo_entecompetente = luogodellacultura.find("enteCompetente").attrib['ruolo']
@@ -125,10 +305,11 @@ for i in idx:
                         codice_entecompetente_dbunico20 = codice.text
                     if (codice.attrib['sorgente']=='MiBAC'):
                         codice_entecompetente_mibac = codice.text
-                entegestore = ""
-                ruolo_entegestore = ""
-                codice_entegestore_dbunico20 = ""
-                codice_entegestore_mibac = ""
+                        
+            entegestore = ""
+            ruolo_entegestore = ""
+            codice_entegestore_dbunico20 = ""
+            codice_entegestore_mibac = ""
                 
             if (luogodellacultura.find("enteGestore/denominazione") != None):
                 entegestore = luogodellacultura.find("enteGestore/denominazione").text
@@ -144,8 +325,9 @@ for i in idx:
     
             contenitori = luogodellacultura.find("contenitori").getchildren()
             if (len(contenitori)>0):
-                print "Ci sono contenitori"
-        
+                for contenitore in contenitori:
+                    print "%s => %s" % (traduzione.attrib,traduzione.text)
+                    #FARE LA INSERT
             biglietteria = luogodellacultura.find("biglietteria")
             telefono_biglietteria = ""
             fax_biglietteria = ""
@@ -177,6 +359,10 @@ for i in idx:
                     if (len(orario_biglietteria_traduzioni)) > 0:
                         print "altre traduzioni orario_biglietteria_traduzioni"
         
+            tipo_prenotazioni = ""
+            prenotazioni_sitoweb = ""
+            prenotazioni_email = ""
+            prenotazioni_telefono = ""
             if (luogodellacultura.find("prenotazioni") != None):
                 tipo_prenotazioni = ""
                 if len(luogodellacultura.find("prenotazioni").attrib) > 0:
@@ -189,49 +375,127 @@ for i in idx:
                     print "altre traduzioni prenotazioni_telefono_traduzioni" 
         
             indirizzi = luogodellacultura.find("indirizzi").getchildren()
-            if (len(indirizzi) > 1):
-                print "ci sono molti indirizzi"
-            indirizzo = indirizzi[0]
-            tipo_indirizzo = ""
-            if len(indirizzo.attrib) > 0:
-                tipo_indirizzo = indirizzo.attrib[indirizzo.attrib.keys()[0]]
-            via_indirizzo = ""
-            if (indirizzo.find('via-piazza') != None):
-                via_indirizzo = indirizzo.find('via-piazza').text
-            comune_indirizzo = ""
-            codistat_comune_indirizzo = ""
-            if (indirizzo.find('comune') != None):
-                comune_indirizzo = indirizzo.find('comune').text
-                codistat_comune_indirizzo = indirizzo.find('comune').attrib['istat']
-            cap_indirizzo = ""
-            if (indirizzo.find('cap') != None):
-                cap_indirizzo = indirizzo.find('cap').text
-            provincia_indirizzo = ""
-            codistat_provincia_indirizzo = ""
-            if (indirizzo.find('provincia') != None):
-                provincia_indirizzo = indirizzo.find('provincia').text
-                codistat_provincia_indirizzo = indirizzo.find('provincia').attrib['istat'] 
-            if (indirizzo.find('regione') != None):
-                regione_indirizzo = indirizzo.find('regione').text
-                codistat_regione_indirizzo = indirizzo.find('regione').attrib['istat'] 
-            latitudine = ""
-            longitudine = ""
-            if (indirizzo.find('cartografia') != None):
-                latitudine = indirizzo.find('cartografia/punto/latitudineX').text
-                longitudine = indirizzo.find('cartografia/punto/longitudineY').text
+            nindirizzi = 0
+            via_indirizzo_default = ''
+            comune_indirizzo_default = ''
+            provincia_indirizzo_default = ''
+            regione_indirizzo_default = ''
+            istat_regione_default = ''
+            istat_provincia_default = ''
+            istat_comune_default = ''
+            localita_indirizzo_default = ''
+            cap_indirizzo_default = ''
+            latitudine_default = ''
+            longitudine_default = ''
+            for indirizzo in indirizzi:
+                tipo_indirizzo = ""
+                if len(indirizzo.attrib) > 0:
+                    tipo_indirizzo = indirizzo.attrib[indirizzo.attrib.keys()[0]]
+                via_indirizzo = ""
+                if (indirizzo.find('via-piazza') != None):
+                    via_indirizzo = indirizzo.find('via-piazza').text
+                localita_indirizzo = ""
+                if (indirizzo.find('localita') != None):
+                    localita_indirizzo = indirizzo.find('localita').text
+                comune_indirizzo = ""
+                codistat_comune_indirizzo = ""
+                if (indirizzo.find('comune') != None):
+                    comune_indirizzo = indirizzo.find('comune').text
+                    codistat_comune_indirizzo = indirizzo.find('comune').attrib['istat']
+                cap_indirizzo = ""
+                if (indirizzo.find('cap') != None):
+                    cap_indirizzo = indirizzo.find('cap').text
+                provincia_indirizzo = ""
+                codistat_provincia_indirizzo = ""
+                if (indirizzo.find('provincia') != None):
+                    provincia_indirizzo = indirizzo.find('provincia').text
+                    codistat_provincia_indirizzo = indirizzo.find('provincia').attrib['istat'] 
+                if (indirizzo.find('regione') != None):
+                    regione_indirizzo = indirizzo.find('regione').text
+                    codistat_regione_indirizzo = indirizzo.find('regione').attrib['istat'] 
+                latitudine = ""
+                longitudine = ""
+                if (indirizzo.find('cartografia') != None):
+                    latitudine = indirizzo.find('cartografia/punto/latitudineX').text
+                    longitudine = indirizzo.find('cartografia/punto/longitudineY').text
+                    
+                if nindirizzi == 0:
+                    via_indirizzo_default = via_indirizzo
+                    localita_indirizzo_default = localita_indirizzo
+                    comune_indirizzo_default = comune_indirizzo
+                    provincia_indirizzo_default = provincia_indirizzo
+                    cap_indirizzo_default = cap_indirizzo
+                    latitudine_default = latitudine
+                    longitudine_default = longitudine             
+                nindirizzi += 1
+                 
             links = luogodellacultura.find("links")
-            print links.getchildren()
+            if (links):
+                for link in links.getchildren():
+                    print "%s => %s" % (link.attrib,link.text)
             allegati = luogodellacultura.find("allegati")
-            print allegati.getchildren()
+            if (allegati):
+                for allegato in allegati.getchildren():
+                    print "%s => %s" % (allegato.attrib,allegato.text)    
+
             step += 1
+            
             if (longitudine != ""):
                 writerow.append(djenc.smart_str(nome))        
-                writerow.append(djenc.smart_str(via_indirizzo))
-                writerow.append(djenc.smart_str(comune_indirizzo))
-                writerow.append(djenc.smart_str(provincia_indirizzo))
-                writerow.append(djenc.smart_str(cap_indirizzo))
+                writerow.append(djenc.smart_str(via_indirizzo_default))
+                writerow.append(djenc.smart_str(localita_indirizzo_default))
+                writerow.append(djenc.smart_str(comune_indirizzo_default))
+                writerow.append(djenc.smart_str(provincia_indirizzo_default))
+                writerow.append(djenc.smart_str(cap_indirizzo_default))
                 writerow.append(djenc.smart_str(sitoweb))
-                writerow.append(djenc.smart_str(latitudine))
-                writerow.append(djenc.smart_str(longitudine))
+                writerow.append(djenc.smart_str(latitudine_default))
+                writerow.append(djenc.smart_str(longitudine_default))
                 museiwriter.writerow(writerow)
+
+            print latitudine
+            print longitudine
+            geom = "GeomFromText('POINT("
+            geom += "%f " % (float(longitudine))
+            geom += "%f" % (float(latitudine))
+            geom += ")', 4326)"
+            sql = '''INSERT INTO luoghi (
+            codice_dbunico2, stato, nomeRedattore, nomeCapoRedattore, 
+            dataValidazione, dataUltimaModifica, datacreazionexml, 
+            sorgente, tipologia, categoria, proprieta, nome, descrizione, 
+            orario, responsabile, accessibilita, sitoweb,
+            email, email_certificata, telefono, chiusurasettimanale,
+            entecompetente, ruolo_entecompetente, codice_entecompetente_dbunico20, codice_entecompetente_mibac,
+            entegestore, ruolo_entegestore, codice_entegestore_dbunico20, codice_entegestore_mibac, telefono_biglietteria,
+            fax_biglietteria, email_biglietteria, costo_biglietto, riduzioni_biglietto, orario_biglietteria,
+            tipo_prenotazioni, prenotazioni_sitoweb, prenotazioni_email, prenotazioni_telefono, indirizzo,
+            comune, localita, provincia, regione, istat_regione, istat_provincia, istat_comune, cap, latitudine, longitudine,geom)
+            ) VALUES (
+            '''
+            sql += '''%i, '%s', '%s', '%s','%s', '%s', '%s', 
+            '%s', '%s','%s', '%s','%s','%s', 
+            '%s','%s', '%s','%s',
+            '%s', '%s','%s','%s',
+            '%s', '%s', '%s', '%s',
+            '%s', '%s', '%s', '%s', '%s',
+            '%s', '%s', '%s', '%s', '%s',
+            '%s', '%s', '%s', '%s', '%s',
+            '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s','%s');''' % \
+            (codice_dbunico2, stato, nomeRedattore, nomeCapoRedattore, dataValidazione, \
+            dataUltimaModifica, datacreazionexml, sorgente, tipologiaprevalente, categoriaprevalente, \
+            proprieta, nome, descrizione, orario, responsabile, accessibilita, sitoweb,\
+            email, email_certificata, telefono, chiusurasettimanale,\
+            entecompetente, ruolo_entecompetente, codice_entecompetente_dbunico20, \
+            codice_entecompetente_mibac, entegestore, ruolo_entegestore, codice_entegestore_dbunico20, \
+            codice_entegestore_mibac, telefono_biglietteria,fax_biglietteria, email_biglietteria, \
+            costo_biglietto, riduzioni_biglietto, orario_biglietteria, tipo_prenotazioni, \
+            prenotazioni_sitoweb, prenotazioni_email, prenotazioni_telefono, via_indirizzo_default, \
+            comune_indirizzo_default, localita_indirizzo_default, provincia_indirizzo_default, \
+            regione_indirizzo_default, istat_regione_default, istat_provincia_default, istat_comune_default, \
+            cap_indirizzo_default, str(latitudine_default), str(longitudine_default),geom)
+            print sql
+            cur.execute(sql)
+            conn.commit()
+conn.close()
+quit()
+
 
