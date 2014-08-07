@@ -22,7 +22,7 @@ for s in range(steps):
 step = 0
 with open(filename, 'wb') as csvfile:
     museiwriter = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    museiwriter.writerow(["nome","indirizzo","comune","provincia","cap","sitoweb","latitudine","longitudine"])
+    museiwriter.writerow(["nome","indirizzo","localita","comune","provincia","cap","sitoweb","latitudine","longitudine"])
 
 
 #spatialite
