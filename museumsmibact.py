@@ -7,7 +7,7 @@ from pyspatialite import dbapi2 as db
 filename="luoghicultura.csv"
 dbfile="luoghicultura.sqlite"
 url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&quantita=1&offset=0"
-#TUTTO url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&quantita=1&offset=0"
+url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&quantita=1&offset=0"
 xml = urllib2.urlopen(url)
 root = etree.parse(xml)
 totmuseums = int(root.getroot().attrib['totale'])
@@ -82,7 +82,8 @@ istat_provincia TEXT,
 istat_comune TEXT,
 cap TEXT,
 latitudine TEXT,
-longitudine TEXT);
+longitudine TEXT,
+url_img_default TEXT);
 '''
 cur.execute(sql)
 
@@ -176,8 +177,8 @@ cur.execute(sql)
 
 for i in idx:
     index = idx.index(i)
-    url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&offset=%s" % (i) 
     url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&offset=%s&quantita=1000" % (i)      
+    url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&offset=%s" % (i) 
     xml = urllib2.urlopen(url)
     docxml = etree.parse(xml).findall("mibac")
     with open(filename, 'a') as csvfile:
@@ -350,7 +351,6 @@ for i in idx:
                 email_biglietteria = biglietteria.find("email-biglietteria").text
                 if (biglietteria.find("costo/testostandard") != None):
                     costo_biglietto = biglietteria.find("costo/testostandard").text
-                print costo_biglietto
                 costo_biglietto_traduzioni = biglietteria.find("costo/traduzioni").getchildren()
                 if (len(costo_biglietto_traduzioni)) > 0:
                     print "altre traduzioni costo_biglietto_traduzioni" 
@@ -437,11 +437,20 @@ for i in idx:
             links = luogodellacultura.find("links")
             if (links):
                 for link in links.getchildren():
-                    print "%s => %s" % (link.attrib,link.text)
+                    print link.find("url").text
+#                    print link.find("titolo").text
+#                    print link.find("descrizione").text                    
+            
+            url_img_default = ""
             allegati = luogodellacultura.find("allegati")
-            if (allegati):
+            if (len(allegati) >0):
                 for allegato in allegati.getchildren():
-                    print "%s => %s" % (allegato.attrib,allegato.text)    
+                    print allegato.attrib["ruolo"]
+#                    print allegato.find("url").text
+#                    print allegato.find("didascalia").text
+#                    print allegato.find("descrizione").text
+                    if (allegato.attrib["ruolo"].find("Immagine")  >=0 and allegato.attrib["ruolo"].find("Principale") >=0):
+                                url_allegato_default = allegati[0].find("url").text
 
             step += 1
             
@@ -475,7 +484,8 @@ for i in idx:
                 entegestore, ruolo_entegestore, codice_entegestore_dbunico20, codice_entegestore_mibac, telefono_biglietteria,
                 fax_biglietteria, email_biglietteria, costo_biglietto, riduzioni_biglietto, orario_biglietteria,
                 tipo_prenotazioni, prenotazioni_sitoweb, prenotazioni_email, prenotazioni_telefono, indirizzo,
-                comune, localita, provincia, regione, istat_regione, istat_provincia, istat_comune, cap, latitudine, longitudine,geom
+                comune, localita, provincia, regione, istat_regione, istat_provincia, istat_comune, 
+                cap, latitudine, longitudine, geom, url_img_default
                 ) VALUES (
                 '''
                 sql += '''%i, '%s', '%s', '%s','%s', '%s', '%s', 
@@ -486,7 +496,7 @@ for i in idx:
                 '%s', '%s', '%s', '%s', '%s',
                 '%s', '%s', '%s', '%s', '%s',
                 '%s', '%s', '%s', '%s', '%s',
-                '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',%s);''' % \
+                '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',%s, '%s');''' % \
                 (int(codice_dbunico2), djenc.smart_str(stato), djenc.smart_str(nomeRedattore).replace("'","''"), djenc.smart_str(nomeCapoRedattore).replace("'","''"), \
                 dataValidazione, \
                 dataUltimaModifica, datacreazionexml, djenc.smart_str(sorgente).replace("'","''"), \
@@ -511,7 +521,7 @@ for i in idx:
                 djenc.smart_str(regione_indirizzo_default).replace("'","''"), djenc.smart_str(istat_regione_default).replace("'","''"), \
                 djenc.smart_str(istat_provincia_default).replace("'","''"), djenc.smart_str(istat_comune_default).replace("'","''"), \
                 djenc.smart_str(cap_indirizzo_default).replace("'","''"), str(latitudine_default), str(longitudine_default),\
-                geom)
+                geom, djenc.smart_str(url_img_default).replace("'","''"))
                 cur.execute(sql)
                 conn.commit()
 conn.close()
