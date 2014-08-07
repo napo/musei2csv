@@ -6,27 +6,20 @@ from pyspatialite import dbapi2 as db
  
 filename="luoghicultura.csv"
 dbfile="luoghicultura.sqlite"
-#MUSEI url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&quantita=1&offset=0"
-url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&quantita=1&offset=0"
-
+url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&quantita=1&offset=0"
+#TUTTO url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&quantita=1&offset=0"
 xml = urllib2.urlopen(url)
 root = etree.parse(xml)
 totmuseums = int(root.getroot().attrib['totale'])
 print totmuseums
 limit = 1000
 steps=totmuseums/limit
-
-
 idx = []
-
 if (totmuseums%limit>0):
-    steps += 1
-    
-
+    steps += 1 
 for s in range(steps):
     idx.append(s*limit)
 step = 0
-
 with open(filename, 'wb') as csvfile:
     museiwriter = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     museiwriter.writerow(["nome","indirizzo","comune","provincia","cap","sitoweb","latitudine","longitudine"])
@@ -182,9 +175,9 @@ cur.execute(sql)
 
 
 for i in idx:
-    index = idx.index(i)   
-    url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&offset=%s" % (index) 
-#musei    url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&offset=%s&quantita=1000" % (index)      
+    index = idx.index(i)
+    url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&stato=P&offset=%s" % (i) 
+    url = "http://dbunico20.beniculturali.it/DBUnicoManagerWeb/dbunicomanager/searchPlace?modulo=luoghi&tipologiaLuogo=1&stato=P&offset=%s&quantita=1000" % (i)      
     xml = urllib2.urlopen(url)
     docxml = etree.parse(xml).findall("mibac")
     with open(filename, 'a') as csvfile:
@@ -355,7 +348,9 @@ for i in idx:
                 if (len(fax_biglietteria_traduzioni)) > 0:
                     print "altre traduzioni fax_biglietteria"  
                 email_biglietteria = biglietteria.find("email-biglietteria").text
-                costo_biglietto = biglietteria.find("costo").text
+                if (biglietteria.find("costo/testostandard") != None):
+                    costo_biglietto = biglietteria.find("costo/testostandard").text
+                print costo_biglietto
                 costo_biglietto_traduzioni = biglietteria.find("costo/traduzioni").getchildren()
                 if (len(costo_biglietto_traduzioni)) > 0:
                     print "altre traduzioni costo_biglietto_traduzioni" 
