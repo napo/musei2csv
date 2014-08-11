@@ -416,7 +416,7 @@ for i in idx:
                     provincia_indirizzo = indirizzo.find('provincia').text
                     codistat_provincia_indirizzo = indirizzo.find('provincia').attrib['istat'] 
                 if (indirizzo.find('regione') != None):
-                    regione_indirizzo = indirizzo.find('regione').text
+                    regione_indirizzo_default = indirizzo.find('regione').text
                     codistat_regione_indirizzo = indirizzo.find('regione').attrib['istat'] 
                 latitudine = ""
                 longitudine = ""
