@@ -6,8 +6,7 @@ Created on Sun Aug 10 19:33:28 2014
 """
 import urllib2
 from lxml import etree
-
-
+import django.utils.encoding as djenc
 
 class MibacData:
     tipologialuoghi = {}
@@ -70,19 +69,18 @@ class MibacData:
 
 class Mibac:  
     def __init__(self,inmibac,idtipologialuogo=1,tipologialuogo="musei"):
-        self.mibacxml = None
         self.accessibilita = ""
         self.allegati = []
-        self.cap_default = ""
-        self.categoriaprevalente = ""
-        self.categorie = {}
+        self.cap = ""
+        self.categoria = ""
+        self.categorie = []
         self.chiusurasettimanale = ""        
         self.codice_dbunico2 = ""
         self.codice_entecompetente_dbunico20 = ""
         self.codice_entecompetente_mibac = ""   
         self.codice_entegestore_dbunico20 = ""
         self.codice_entegestore_mibac = ""
-        self.comune_default = ""
+        self.comune = ""
         self.contenitori = {}
         self.costo_biglietto = ""
         self.data_validazione = ""
@@ -97,16 +95,17 @@ class Mibac:
         self.entegestore = ""
         self.fax = ""
         self.fax_biglietteria = ""
-        self.idtipologialuogo = 1
+        self.idtipologialuogo = idtipologialuogo
+        self.img = ""
         self.indirizzi = []
-        self.indirizzo_default = ""
-        self.istat_regione_default = ""
-        self.istat_provincia_default = ""
-        self.istat_comune_default = ""
-        self.latitudine_default = ""
+        self.indirizzo = ""
+        self.istat_regione = ""
+        self.istat_provincia = ""
+        self.istat_comune = ""
+        self.latitudine = ""
         self.links = []
-        self.localita_default = ""
-        self.longitudine_default = ""
+        self.localita = ""
+        self.longitudine = ""
         self.nome_redattore = ""
         self.nome_capo_redattore = ""
         self.nome = ""
@@ -116,7 +115,10 @@ class Mibac:
         self.prenotazioni_email = ""
         self.prenotazioni_telefono = ""
         self.proprieta = ""
+        self.provincia = ""   
         self.responsabile = ""
+        self.regione = ""
+        self.riduzioni_biglietto = ""    
         self.ruolo_entecompetente = ''
         self.ruolo_entegestore = ""
         self.stato = ""
@@ -125,81 +127,80 @@ class Mibac:
         self.sorgente = ""
         self.telefono = ""
         self.telefono_biglietteria = ""
-        self.telefono_biglietteria = ""
-        self.tipologialuogo = "musei"
-        self.tipologiaprevalente = ""
-        self.tipologie = {}
+        self.tipologialuogo = tipologialuogo
+        self.tipologia = ""
+        self.tipologie = []
         self.traduzioni_descrizione = {}
         self.traduzioni_orario = {}
         self.traduzioni_telefono = {}
         self.traduzioni_fax= {}
         self.traduzioni_chiusurasettimanale= {}
+        self.traduzioni_orario_biglietteria = {}
         self.traduzioni_telefono_biglietteria = {}
         self.traduzioni_fax_biglietteria = {} 
         self.traduzioni_costo_biglietto = {}
         self.traduzioni_riduzioni_biglietto = {}
+        self.traduzioni_prenotazioni_telefono = {}
         self.tipo_prenotazioni = ""
-        self.tipo_prenotazioni = ""
-        self.traduzioni_prenotazioni_telefono = ""
         self.riduzioni_biglietto = ""
-        self.provincia_default = ""
-        self.regione_default = ""
-        self.riduzioni_biglietto = ""        
-        
         self.mibacxml = inmibac
-        self.idtipologialuogo = idtipologialuogo
-        self.tipologialuogo = tipologialuogo
+
+
         mibac = inmibac
-        
+
         #METAINFO
         metainfo = mibac.find('metainfo')
         if (metainfo.find('workflow/stato') is not None):
-            self.stato = metainfo.find('workflow/stato').text
+            self.stato = djenc.smart_str(metainfo.find('workflow/stato').text)
         if (metainfo.find('workflow/enteCompilatore') is not None):
-            self.ente_compilatore = metainfo.find('workflow/enteCompilatore').text
+            self.ente_compilatore = djenc.smart_str(metainfo.find('workflow/enteCompilatore').text)
         if (metainfo.find('workflow/nomeRedattore') is not None):
-            self.nome_redattore = metainfo.find('workflow/nomeRedattore').text
+            self.nome_redattore = djenc.smart_str(metainfo.find('workflow/nomeRedattore').text)
         if (metainfo.find('workflow/nomeCapoRedattore') is not None):
-            self.nome_capo_redattore = metainfo.find('workflow/nomeCapoRedattore').text
+            self.nome_capo_redattore = djenc.smart_str(metainfo.find('workflow/nomeCapoRedattore').text)
         if (metainfo.find('workflow/dataValidazione') is not None):
-            self.data_validazione = metainfo.find('workflow/dataValidazione').text
+            self.data_validazione = djenc.smart_str(metainfo.find('workflow/dataValidazione').text)
         if (metainfo.find('workflow/dataUltimaModifica') is not None):
-            self.data_ultima_modifica = metainfo.find('workflow/dataUltimaModifica').text
+            self.data_ultima_modifica = djenc.smart_str(metainfo.find('workflow/dataUltimaModifica').text)
         if (metainfo.find('datacreazionexml') is not None):
-            self.data_creazione_xml = metainfo.find('datacreazionexml').text
+            self.data_creazione_xml = djenc.smart_str(metainfo.find('datacreazionexml').text)
         if (metainfo.find('sorgente') is not None):
-            self.sorgente = metainfo.find('sorgente').text
+            self.sorgente = djenc.smart_str(metainfo.find('sorgente').text)
         
         #LUOGODELLACULTURA
         luogodellacultura = mibac.find("luogodellacultura")
         codici = luogodellacultura.find("identificatore").getchildren()
         for codice in codici:
             if codice.attrib['sorgente'] == 'DBUnico 2.0':
-                self.codice_dbunico2 = codice.text
-        self.tipologiaprevalente = luogodellacultura.find("tipologie").attrib['tipologiaPrevalente']
-        if (len(luogodellacultura.find("tipologie").attrib)) > 1:
-            for tipologia in luogodellacultura.find("tipologie").getchildren():
-                self.tipologie[tipologia.attrib] = tipologia.text
-        self.categoriaprevalente = luogodellacultura.find("categorie").attrib['categoriaPrevalente']
-        if (len(luogodellacultura.find("categorie").attrib)) > 1:
-            for categoria in luogodellacultura.find("categorie").getchildren():
-                self.categorie[categoria.attrib] = categoria.text
-        self.proprieta = luogodellacultura.find("proprieta").text
+                self.codice_dbunico2 = djenc.smart_str(codice.text)
+        self.tipologia = luogodellacultura.find("tipologie").attrib['tipologiaPrevalente']
+        xtipologie = luogodellacultura.find("tipologie")
+        if (len(xtipologie)>0):
+            for t in range(len(xtipologie)):
+                self.tipologie.append(djenc.smart_str(xtipologie[t].text))
+                
+        self.categoria = luogodellacultura.find("categorie").attrib['categoriaPrevalente']
+        xcategorie = luogodellacultura.find("categorie")
+        if (len(xcategorie)>0):
+            for t in range(len(xcategorie)):
+                self.categorie.append(djenc.smart_str(xcategorie[t].text))
+                
+        self.proprieta = djenc.smart_str(luogodellacultura.find("proprieta").text)
         nomestandard = luogodellacultura.find("denominazione/nomestandard").text
         self.nome = nomestandard.replace('"','')        
         
         sinomimi = luogodellacultura.find("denominazione/sinonimi").getchildren()        
         if len(sinomimi) > 0:
             for sinonimo in luogodellacultura.find("denominazione/sinonimi").getchildren():
-                self.sinonimi.append(sinonimo.text)
+                self.sinonimi.append(djenc.smart_str(sinonimo.text))
         
         if (luogodellacultura.find("descrizione/testostandard") is not None):
-            self.descrizione = luogodellacultura.find("descrizione/testostandard").text
+            self.descrizione = djenc.smart_str(luogodellacultura.find("descrizione/testostandard").text)
             traduzioni = luogodellacultura.find("descrizione/traduzioni").getchildren()
             if len(traduzioni) > 0:
                 for traduzione in traduzioni:
-                    for testo in traduzione:
-                        self.traduzioni_descrizione[testo.attrib['lingua']] = testo.text
+                    self.traduzioni_descrizione[traduzione.attrib['lingua']] = djenc.smart_str(traduzione.text)
+       
         info = luogodellacultura.find("info")
         if (info is not None):
             if (info.find("orario/testostandard") is not None):
@@ -207,58 +208,55 @@ class Mibac:
                 orario_traduzioni = info.find("orario/traduzioni").getchildren()
                 if (len(orario_traduzioni) > 0):
                     for traduzione in orario_traduzioni:
-                        for testo in traduzione:
-                            self.traduzioni_orario[testo.attrib['lingua']] = testo.text
-            self.responsabile = info.find("responsabile").text
-            self.accessibilita = info.find("accessibilita").text
-            self.sitoweb = info.find("sitoweb").text
-            self.email = info.find("email").text
-            self.email_certificata = info.find("email-certificata").text
+                        self.traduzioni_orario[traduzione.attrib['lingua']] = djenc.smart_str(traduzione.text)
+                        
+            self.responsabile = djenc.smart_str(info.find("responsabile").text)
+            self.accessibilita = djenc.smart_str(info.find("accessibilita").text)
+            self.sitoweb = djenc.smart_str(info.find("sitoweb").text)
+            self.email = djenc.smart_str(info.find("email").text)
+            self.email_certificata = djenc.smart_str(info.find("email-certificata").text)
             if info.find("telefono").getchildren():
-                self.telefono = info.find("telefono/testostandard").text
+                self.telefono = djenc.smart_str(info.find("telefono/testostandard").text)
                 
             telefono_traduzioni = info.find("telefono/traduzioni").getchildren()               
             if (len(telefono_traduzioni) > 0):
                 for traduzione in telefono_traduzioni:
-                    for testo in traduzione:
-                        self.traduzioni_telefono[testo.attrib['lingua']] = testo.text
+                    self.traduzioni_telefono[traduzione.attrib['lingua']] = djenc.smart_str(traduzione.text)
 
-            self.fax = info.find("fax/testostandard").text            
+            self.fax = djenc.smart_str(info.find("fax/testostandard").text)            
             fax_traduzioni = info.find("fax/traduzioni").getchildren()            
             if (len(fax_traduzioni)) > 0:
                 for traduzione in fax_traduzioni:
-                    for testo in traduzione:
-                        self.traduzioni_fax[testo.attrib['lingua']]=testo.text
+                    self.traduzioni_fax[traduzione.attrib['lingua']] = djenc.smart_str(traduzione.text)
                     
             if (info.find("chiusuraSettimanale/testostandard") is not None):
-                self.chiusurasettimanale = info.find("chiusuraSettimanale/testostandard").text
+                self.chiusurasettimanale = djenc.smart_str(info.find("chiusuraSettimanale/testostandard").text)
                 chiusurasettimanale_traduzioni = info.find("chiusuraSettimanale/traduzioni").getchildren()
                 if (len(chiusurasettimanale_traduzioni)) > 0:
                     for traduzione in chiusurasettimanale_traduzioni:
-                        for testo in traduzione:
-                            self.traduzioni_chiusurasettimanale[testo.attrib['lingua']] = testo.text
+                        self.traduzioni_chiusurasettimanale[traduzione.attrib['lingua']] = djenc.smart_str(traduzione.text)
         
         if (luogodellacultura.find("enteCompetente") is not None):
-            self.entecompetente = luogodellacultura.find("enteCompetente/denominazione").text
-            self.ruolo_entecompetente = luogodellacultura.find("enteCompetente").attrib['ruolo']
+            self.entecompetente = djenc.smart_str(luogodellacultura.find("enteCompetente/denominazione").text)
+            self.ruolo_entecompetente = djenc.smart_str(luogodellacultura.find("enteCompetente").attrib['ruolo'])
             codici = luogodellacultura.find("enteCompetente/identificatore").getchildren()
 
             for codice in codici:
                 if (codice.attrib['sorgente']=='DBUnico2.0'):
-                    self.codice_entecompetente_dbunico20 = codice.text
+                    self.codice_entecompetente_dbunico20 = djenc.smart_str(codice.text)
                 if (codice.attrib['sorgente']=='MiBAC'):
-                    self.codice_entecompetente_mibac = codice.text
+                    self.codice_entecompetente_mibac = djenc.smart_str(codice.text)
                                 
         if (luogodellacultura.find("enteGestore/denominazione") is not None):
-            self.entegestore = luogodellacultura.find("enteGestore/denominazione").text
-            self.ruolo_entegestore = luogodellacultura.find("enteGestore").attrib['ruolo']
+            self.entegestore = djenc.smart_str(luogodellacultura.find("enteGestore/denominazione").text)
+            self.ruolo_entegestore = djenc.smart_str(luogodellacultura.find("enteGestore").attrib['ruolo'])
             codici = luogodellacultura.find("enteGestore/identificatore").getchildren()
 
             for codice in codici:
                 if (codice.attrib['sorgente']=='DBUnico2.0'):
-                    self.codice_entegestore_dbunico20 = codice.text
+                    self.codice_entegestore_dbunico20 = djenc.smart_str(codice.text)
                 if (codice.attrib['sorgente']=='MiBAC'):
-                    self.codice_entegestore_mibac = codice.text
+                    self.codice_entegestore_mibac = djenc.smart_str(codice.text)
 
         
 
@@ -266,154 +264,155 @@ class Mibac:
         if (len(contenitori)>0):
             for contenitore in contenitori:
                 for c in contenitore:
-                    self.contenitori[c.tag] = c.text 
+                    self.contenitori[c.tag] = djenc.smart_str(c.text) 
 
                
         biglietteria = luogodellacultura.find("biglietteria")
 
         if (biglietteria is not None):
-            self.telefono_biglietteria = biglietteria.find("telefono-biglietteria/testostandard").text
+            self.telefono_biglietteria = djenc.smart_str(biglietteria.find("telefono-biglietteria/testostandard").text)
             telefono_biglietteria_traduzioni = biglietteria.find("telefono-biglietteria/traduzioni").getchildren()
             if (len(telefono_biglietteria_traduzioni)) > 0:
                 for traduzione in telefono_biglietteria_traduzioni:
-                    for testo in traduzione:
-                        self.traduzioni_telefono_biglietteria[testo.attrib['lingua']] = testo.text
+                    self.traduzioni_telefono_biglietteria[traduzione.attrib['lingua']] = djenc.smart_str(traduzione.text)
                     
-            self.fax_biglietteria = biglietteria.find("fax-biglietteria/testostandard").text
+            self.fax_biglietteria = djenc.smart_str(biglietteria.find("fax-biglietteria/testostandard").text)
             fax_biglietteria_traduzioni = biglietteria.find("fax-biglietteria/traduzioni").getchildren()
             if (len(fax_biglietteria_traduzioni)) > 0:
                 for traduzione in fax_biglietteria_traduzioni:
-                    for testo in traduzione:
-                        self.traduzioni_fax_biglietteria[testo.attrib['lingua']] = testo.text
+                    self.traduzioni_fax_biglietteria[traduzione.attrib['lingua']] = djenc.smart_str(traduzione.text)
  
             self.email_biglietteria = biglietteria.find("email-biglietteria").text
             if (biglietteria.find("costo/testostandard") is not None):
-                self.costo_biglietto = biglietteria.find("costo/testostandard").text
+                self.costo_biglietto = djenc.smart_str(biglietteria.find("costo/testostandard").text)
            
             costo_biglietto_traduzioni = biglietteria.find("costo/traduzioni").getchildren() 
             if (len(costo_biglietto_traduzioni)) > 0:
                 for traduzione in costo_biglietto_traduzioni:
-                    for testo in traduzione:
-                        self.traduzioni_costo_biglietto[testo.attrib['lingua']] = testo.text
+                    testo = djenc.smart_str(traduzione.text)
+                    lingua = traduzione.attrib[traduzione.keys()[0]]
+                    self.traduzioni_costo_biglietto[lingua] = testo
             
-            self.riduzioni_biglietto = biglietteria.find("riduzioni").text
+            self.riduzioni_biglietto = djenc.smart_str(biglietteria.find("riduzioni").text)
             riduzioni_biglietto_traduzioni = biglietteria.find("riduzioni/traduzioni").getchildren()
             if (len(riduzioni_biglietto_traduzioni)) > 0:
                 for traduzione in riduzioni_biglietto_traduzioni:
-                    for testo in traduzione:
-                        self.traduzioni_riduzioni_biglietto[testo.attrib['lingua']] = testo.text
+                    testo = djenc.smart_str(traduzione.text)
+                    lingua = traduzione.attrib[traduzione.keys()[0]]
+                    self.traduzioni_riduzioni_biglietto[lingua] = testo
             
             self.orario_biglietteria = biglietteria.find("orario-biglietteria").text
             if (biglietteria.find("orario-biglietteria/traduzioni") is not None):
                 orario_biglietteria_traduzioni = biglietteria.find("orario-biglietteria/traduzioni").getchildren()
                 if (len(orario_biglietteria_traduzioni)) > 0:
                     for traduzione in orario_biglietteria_traduzioni:
-                        for testo in traduzione:
-                            self.traduzioni_orario_biglietteria[testo.attrib['lingua']] = testo.text
+                        testo = djenc.smart_str(traduzione.text)
+                        lingua = traduzione.attrib[traduzione.keys()[0]]
+                        self.traduzioni_orario_biglietteria[testo] = lingua
     
         if (luogodellacultura.find("prenotazioni") is not None):
             if len(luogodellacultura.find("prenotazioni").attrib) > 0:
-                self.tipo_prenotazioni = luogodellacultura.find("prenotazioni").attrib['tipo']
-            self.prenotazioni_sitoweb = luogodellacultura.find("prenotazioni/sitoweb").text
-            self.prenotazioni_email = luogodellacultura.find("prenotazioni/email").text
-            self.prenotazioni_telefono = luogodellacultura.find("prenotazioni/telefono").text
+                self.tipo_prenotazioni = djenc.smart_str(luogodellacultura.find("prenotazioni").attrib['tipo'])
+            self.prenotazioni_sitoweb = djenc.smart_str(luogodellacultura.find("prenotazioni/sitoweb").text)
+            self.prenotazioni_email = djenc.smart_str(luogodellacultura.find("prenotazioni/email").text)
+            self.prenotazioni_telefono = djenc.smart_str(luogodellacultura.find("prenotazioni/telefono").text)
             prenotazioni_telefono_traduzioni = luogodellacultura.find("prenotazioni/telefono/traduzioni").getchildren()
             if (len(prenotazioni_telefono_traduzioni)) > 0:            
                 for traduzione in prenotazioni_telefono_traduzioni:
-                    for testo in traduzione:
-                        self.traduzioni_prenotazioni_telefono[testo.attrib['lingua']] = testo.text  
+                    testo = djenc.smart_str(traduzione.text)
+                    lingua = traduzione.attrib[traduzione.keys()[0]]
+                    self.traduzioni_prenotazioni_telefono[testo] = lingua
         
-        indirizzi = luogodellacultura.find("indirizzi")
+        xmlindirizzi = luogodellacultura.find("indirizzi")
         nindirizzi = 0
-        storeindirizzi = {}
-        for xmlindirizzo in indirizzi.getchildren():
-            tipo_indirizzo = ""
-            indirizzo = ""
-            localita = ""
-            comune = ""
-            istat_comune = ""
-            provincia = ""
-            istat_provincia = ""
-            regione = ""
-            istat_regione = ""
-            cap = ""
-            latitudine = ""
-            longitudine = ""            
-            if (xmlindirizzo.attrib is not None):
-                if (xmlindirizzo.attrib !=""):
-                    tipo_indirizzo = xmlindirizzo.attrib[xmlindirizzo.attrib.keys()[0]]
-            else:
-                tipo_indirizzo = 'sede'
-            if (xmlindirizzo.find('via-piazza') is not None):
-                indirizzo = xmlindirizzo.find('via-piazza').text
-            if (xmlindirizzo.find('localita') is not None):
-                localita = xmlindirizzo.find('localita').text
-            if (xmlindirizzo.find('comune') is not None):
-                comune = xmlindirizzo.find('comune').text
-                istat_comune = xmlindirizzo.find('comune').attrib['istat']
-            if (xmlindirizzo.find('cap') is not None):
-                cap = xmlindirizzo.find('cap').text    
-            if (xmlindirizzo.find('provincia') is not None):
-                provincia = xmlindirizzo.find('provincia').text
-                istat_provincia = xmlindirizzo.find('provincia').attrib['istat'] 
-            if (xmlindirizzo.find('regione') is not None):
-                regione = xmlindirizzo.find('regione').text
-                istat_regione = xmlindirizzo.find('regione').attrib['istat'] 
-            if (xmlindirizzo.find('cartografia') is not None):
-                latitudine = xmlindirizzo.find('cartografia/punto/latitudineX').text
-                longitudine = xmlindirizzo.find('cartografia/punto/longitudineY').text
 
-            storeindirizzi['tipo']= tipo_indirizzo
-            storeindirizzi['indirizzo'] = indirizzo
-            storeindirizzi['localita'] = localita 
-            storeindirizzi['comune'] = comune
-            storeindirizzi['istat_comune'] = istat_comune
-            storeindirizzi['provincia'] = provincia
-            storeindirizzi['istat_provincia'] = istat_provincia
-            storeindirizzi['regione'] = regione
-            storeindirizzi['istat_regione'] = istat_regione
-            storeindirizzi['cap'] = cap
-            storeindirizzi['latitudine'] = latitudine 
-            storeindirizzi['longitudine'] = longitudine
+        for xmlindirizzo in xmlindirizzi:
+            xtipo_indirizzo = ""
+            xindirizzo = ""
+            xlocalita = ""
+            xcomune = ""
+            xistat_comune = ""
+            xprovincia = ""
+            xistat_provincia = ""
+            xregione = ""
+            xistat_regione = ""
+            xcap = ""
+            xlatitudine = ""
+            xlongitudine = "" 
+            storeindirizzi = {}           
+            if (len(xmlindirizzo.attrib)>0):
+                xtipo_indirizzo = djenc.smart_str(xmlindirizzo.attrib[xmlindirizzo.attrib.keys()[0]])
+            if (xmlindirizzo.find('via-piazza') is not None):
+                xindirizzo = djenc.smart_str(xmlindirizzo.find('via-piazza').text)
+            if (xmlindirizzo.find('localita') is not None):
+                xlocalita = djenc.smart_str(xmlindirizzo.find('localita').text)
+            if (xmlindirizzo.find('comune') is not None):
+                xcomune = djenc.smart_str(xmlindirizzo.find('comune').text)
+                xistat_comune = djenc.smart_str(xmlindirizzo.find('comune').attrib['istat'])
+            if (xmlindirizzo.find('cap') is not None):
+                xcap = djenc.smart_str(xmlindirizzo.find('cap').text)    
+            if (xmlindirizzo.find('provincia') is not None):
+                xprovincia = djenc.smart_str(xmlindirizzo.find('provincia').text)
+                xistat_provincia = djenc.smart_str(xmlindirizzo.find('provincia').attrib['istat']) 
+            if (xmlindirizzo.find('regione') is not None):
+                xregione = djenc.smart_str(xmlindirizzo.find('regione').text)
+                xistat_regione = xmlindirizzo.find('regione').attrib['istat'] 
+            if (xmlindirizzo.find('cartografia') is not None):
+                xlatitudine = djenc.smart_str(xmlindirizzo.find('cartografia/punto/latitudineX').text)
+                xlongitudine = djenc.smart_str(xmlindirizzo.find('cartografia/punto/longitudineY').text)
+
+            storeindirizzi['tipo']= xtipo_indirizzo
+            storeindirizzi['indirizzo'] = xindirizzo
+            storeindirizzi['localita'] = xlocalita 
+            storeindirizzi['comune'] = xcomune
+            storeindirizzi['istat_comune'] = xistat_comune
+            storeindirizzi['provincia'] = xprovincia
+            storeindirizzi['istat_provincia'] = xistat_provincia
+            storeindirizzi['regione'] = xregione
+            storeindirizzi['istat_regione'] = xistat_regione
+            storeindirizzi['cap'] = xcap
+            storeindirizzi['latitudine'] = xlatitudine 
+            storeindirizzi['longitudine'] = xlongitudine
             self.indirizzi.append(storeindirizzi)      
             if nindirizzi == 0:
-                self.indirizzo_default = indirizzo
-                self.localita_default = localita
-                self.comune_default = comune
-                self.provincia_default = provincia
-                self.cap_default = cap
-                self.regione_default = regione
-                self.istat_comune_default = istat_comune
-                self.istat_provincia_default = istat_provincia
-                self.istat_regione = istat_regione
-                self.latitudine_default = latitudine
-                self.longitudine_default = longitudine             
+                self.indirizzo = xindirizzo
+                self.localita = xlocalita
+                self.comune = xcomune
+                self.provincia = xprovincia
+                self.cap = xcap
+                self.regione = xregione
+                self.istat_comune = xistat_comune
+                self.istat_provincia = xistat_provincia
+                self.istat_regione = xistat_regione
+                self.latitudine = xlatitudine
+                self.longitudine = xlongitudine             
             nindirizzi += 1
         
-        store_links = []
+
         links = luogodellacultura.find("links")
+        store_links = []
         if (links.getchildren()>0):
             for link in links:
                 store = {}
                 if (link.attrib is not None):
-                    store['tipo'] = link.attrib
+                    store['tipo'] = djenc.smart_str(link.attrib['tipo'])
                 for l in link.getchildren():
-                    store[l.tag]=l.text
+                    store[l.tag]=djenc.smart_str(l.text)
                 store_links.append(store)
-                self.links.append(store_links)                
+            self.links.append(store_links)                
         
         attachments = {}
         allegati = luogodellacultura.find("allegati")
         if (allegati is not None):
             for allegato in allegati:
-                store = {}
-                ruolo = allegato.attrib["ruolo"]
-                mibacidallegato = allegato.attrib["mibacid"]
+                ruolo = djenc.smart_str(allegato.attrib["ruolo"])
+                mibacidallegato = djenc.smart_str(allegato.attrib["mibacid"])
                 for a in allegato:                   
-                    store[a.tag]=a.text
+                    attachments[a.tag]=djenc.smart_str(a.text)
+                    if ruolo == "Immagine: Principale" and a.tag=="url":
+                        self.img = djenc.smart_str(a.text)
                 attachments["ruolo"] = ruolo
                 attachments["mibacidallegato"] = mibacidallegato
-                attachments["data"] = store                
             self.allegati.append(attachments)
     
         
