@@ -5,21 +5,38 @@ Created on Thu Aug 14 11:33:18 2014
 """
 from dbxmlmibact import DBMibac,LuoghiCultura, Indirizzi, Extra, Allegati, Links
 from managexmlmibac import MibacData
+import os
+
 data = MibacData()
 mibac = data.getalldata()
-db = DBMibac(".","luoghicultura")
+#mibac = data.getmibacdata(1,"musei",0,1000)
+db = DBMibac(os.getcwd(),"luoghicultura")
 
 luoghi = []
 for m in mibac:
     #Accessibilita(accessibilita=m.accessibilita)
 
-    #links
-    if len(m.links)>0:
-        for link in m.links:
-            if (len(link)>0):
-                for l in link:
-                    linkssql = Links(codice_dbunico2=m.codice_dbunico2,url=l['url'],titolo=l['titolo'],descrizione=l['descrizione'],tipo=l['tipo'])
-                    db.add(linkssql)
+#    #links
+#    if len(m.links)>0:
+#        for link in m.links:
+#            if (len(link)>0):
+#                for l in link:
+#                    url = ""
+#                    titolo = ""
+#                    descrizione = ""
+#                    tipo = ""
+#                    if l.has_key('url'):
+#                        url = l['url']
+#                    if l.has_key('titolo'):
+#                        titolo = l['titolo']
+#                        if titolo is None:
+#                            titolo = ""
+#                    if l.has_key('descrizione'):
+#                        descrizione = l['descrizione']
+#                    if l.has_key('tipo'):
+#                        tipo = l['tipo']
+#                    linkssql = Links(codice_dbunico2=m.codice_dbunico2,url=url,titolo=titolo,descrizione=descrizione,tipo=tipo)
+#                    db.add(linkssql)
     
     #Allegati
     #codice_dbunico2, copyright, url, ruolo, didascalia,mibacallegato,descrizione
@@ -33,7 +50,7 @@ for m in mibac:
     #Extra: tipologia,categoria,traduzioni varie, contenitori
     
     if (len(m.contenitori)>0):
-        extrasql = Extra(codice_dbunico2=m.codice_dbunico2,tipo="contenitori",attributo='denominazione',m.contenitori['denominazione'])
+        extrasql = Extra(codice_dbunico2=m.codice_dbunico2,tipo="contenitori",attributo='denominazione',valore=m.contenitori['denominazione'])
         db.add(extrasql)
         
     if len(m.categorie) > 0:

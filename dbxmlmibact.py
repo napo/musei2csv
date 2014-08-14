@@ -18,7 +18,7 @@ from sqlalchemy.orm import sessionmaker, mapper
 class DBMibac():
     def __init__(self,path,name):   
         dbfile = "sqlite:////%s/%s.sqlite" % (path,name)
-        engine = create_engine(dbfile, module=sqlite, echo=True)
+        engine = create_engine(dbfile, module=sqlite, echo=False)
         @event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_rec):
             dbapi_connection.enable_load_extension(True)
