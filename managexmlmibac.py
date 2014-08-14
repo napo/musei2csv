@@ -68,7 +68,7 @@ class MibacData:
         
 
 class Mibac:  
-    def __init__(self,inmibac,idtipologialuogo=1,tipologialuogo="musei"):
+    def __init__(self,inmibac,idtipologialuogo,tipologialuogo):
         self.accessibilita = ""
         self.allegati = []
         self.cap = ""
@@ -91,7 +91,7 @@ class Mibac:
         self.email_biglietteria = ""
         self.email_certificata = ""
         self.entecompetente = ""
-        self.enteCompilatore = ""
+        self.entecompilatore = ""
         self.entegestore = ""
         self.fax = ""
         self.fax_biglietteria = ""
@@ -153,7 +153,7 @@ class Mibac:
         if (metainfo.find('workflow/stato') is not None):
             self.stato = djenc.smart_str(metainfo.find('workflow/stato').text)
         if (metainfo.find('workflow/enteCompilatore') is not None):
-            self.ente_compilatore = djenc.smart_str(metainfo.find('workflow/enteCompilatore').text)
+            self.entecompilatore = djenc.smart_str(metainfo.find('workflow/enteCompilatore').text)
         if (metainfo.find('workflow/nomeRedattore') is not None):
             self.nome_redattore = djenc.smart_str(metainfo.find('workflow/nomeRedattore').text)
         if (metainfo.find('workflow/nomeCapoRedattore') is not None):
