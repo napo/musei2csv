@@ -9,16 +9,16 @@ from pysqlite2 import dbapi2 as sqlite
 from datetime import datetime
 
 from sqlalchemy import create_engine, event
-from sqlalchemy import Table,Column, Integer, TEXT, ForeignKey, MetaData, DateTime
+from sqlalchemy import Table,Column, Integer, TEXT, ForeignKey, MetaData, DateTime, Float
 from geoalchemy import Geometry, GeometryColumn, GeometryDDL
 from geoalchemy.spatialite import GeometryExtensionColumn, SQLiteComparator
 from sqlalchemy.orm import sessionmaker, mapper
-
+import os.path
 
 class DBMibac():
-    def __init__(self,path,name):   
+    def __init__(self,path,name,debug=False):
         dbfile = "sqlite:////%s/%s.sqlite" % (path,name)
-        engine = create_engine(dbfile, module=sqlite, echo=False)
+        engine = create_engine(dbfile, module=sqlite, echo=debug)
         @event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_rec):
             dbapi_connection.enable_load_extension(True)
@@ -26,7 +26,13 @@ class DBMibac():
             dbapi_connection.execute("SELECT InitSpatialMetadata();")
             dbapi_connection.text_factory = str
         metadata = MetaData(engine)
-        
+
+        self.tipologialuoghi = Table('tipologialuoghi', metadata,
+            Column('id', Integer, primary_key=True),
+            Column('idtipo', Integer),
+            Column('nome',TEXT, nullable=True),
+            sqlite_autoincrement=True)
+            
         self.allegati = Table('allegati', metadata,
             Column('id', Integer, primary_key=True),
             Column('codice_dbunico2', Integer,ForeignKey('luoghicultura.codice_dbunico2')),
@@ -82,7 +88,6 @@ class DBMibac():
 
 
         self.luoghicultura= Table('luoghicultura',metadata,
-           #Column('mibacxml',TEXT, nullable=False),
             Column('cap',TEXT),
             Column('categoria',TEXT),
             Column('chiusurasettimanale',TEXT), 
@@ -106,7 +111,7 @@ class DBMibac():
             Column('entegestore',TEXT),     
             Column('fax',TEXT),     
             Column('fax_biglietteria',TEXT),     
-            Column('idtipologialuogo',Integer),  
+            Column('idtipologialuogo',Integer,ForeignKey('tipologialuoghi.id')), 
             Column('img',TEXT),     
             Column('indirizzo',TEXT),     
             Column('istat_regione',TEXT),
@@ -140,7 +145,18 @@ class DBMibac():
             Column('tipo_prenotazioni',TEXT),   
             Column('riduzioni_biglietto',TEXT),   
             GeometryExtensionColumn('geom', Geometry(2)))
+        
+        self.osmnodes =  Table('osmnodes',metadata,
+            Column('id',Integer, primary_key=True),
+            Column('osm_id',Integer),
+            Column('latitudine',Float),     
+            Column('longitudine',Float),   
+            Column('tag',TEXT), 
+            Column('name',TEXT), 
+            GeometryExtensionColumn('geom', Geometry(2)),
+            sqlite_autoincrement=True)
             
+        mapper(TipologiaLuoghi, self.tipologialuoghi)
         mapper(Allegati, self.allegati)
         mapper(Extra,self.extra)
         mapper(Links,self.links)
@@ -150,16 +166,30 @@ class DBMibac():
         mapper(LuoghiCultura, self.luoghicultura, properties={
         'geom': GeometryColumn(self.luoghicultura.c.geom,
         comparator=SQLiteComparator)}) 
+        mapper(OSMNodes, self.osmnodes, properties={
+        'geom': GeometryColumn(self.osmnodes.c.geom,
+        comparator=SQLiteComparator)}) 
         GeometryDDL(self.indirizzi)
         GeometryDDL(self.luoghicultura)
-        metadata.drop_all()
-        metadata.create_all()
+        GeometryDDL(self.osmnodes)
+        if os.path.isfile(path + os.sep + name + ".sqlite") == False:
+            metadata.drop_all()
+            metadata.create_all()
         Session = sessionmaker(bind=engine)
         self.session = Session()
         
     def add(self,indata):
         self.session.add(indata)
+ 
+    def tablequery(self,nameobject):
+        return self.session.query(nameobject)
         
+      
+class TipologiaLuoghi(object):
+    def __init__(self,idtipo, nome): 
+        self.idtipo = idtipo
+        self.nome = nome
+    
 class Allegati(object):
     def __init__(self, codice_dbunico2, copyright, url, ruolo, didascalia,mibacidallegato,descrizione):   
         self.codice_dbunico2 = codice_dbunico2
@@ -178,7 +208,6 @@ class Extra(object):
          
 class Links(object):
     def __init__(self,codice_dbunico2,url,titolo,descrizione,tipo):
-        self.id = id        
         self.codice_dbunico2 = codice_dbunico2
         self.url = url
         self.titolo = titolo 
@@ -274,7 +303,16 @@ class LuoghiCultura(object):
         self.tipologia = tipologia   
         self.tipo_prenotazioni = tipo_prenotazioni 
         self.geom = geom
-
+        
+class OSMNodes(object):
+    def __init__(self,osm_id,tag,name,latitudine,longitudine):
+        point='POINT(%s %s)' % (longitudine,latitudine)
+        self.osm_id = osm_id
+        self.name = name
+        self.tag = tag
+        self.latitudine = latitudine 
+        self.longitudine = longitudine 
+        self.geom = point
 
 
 

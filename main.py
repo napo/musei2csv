@@ -1,9 +1,9 @@
 """
 Created on Thu Aug 14 11:33:18 2014
 
-@author: napo
+@author: Maurizio Napolitano <napo@fbk.eu>
 """
-from dbxmlmibact import DBMibac,LuoghiCultura, Indirizzi, Extra, Allegati, Links
+from dbxmlmibact import DBMibac,LuoghiCultura, Indirizzi, Extra, Allegati, Links, TipologiaLuoghi
 from managexmlmibac import MibacData
 import os
 
@@ -13,30 +13,36 @@ mibac = data.getalldata()
 db = DBMibac(os.getcwd(),"luoghicultura")
 
 luoghi = []
+tipi = MibacData.tipologialuoghi
+for t in tipi.viewkeys():
+    id = int(t)
+    nome = tipi[id]
+    tiposql = TipologiaLuoghi(idtipo=id,nome=nome)
+    db.add(tiposql)
+    
 for m in mibac:
     #Accessibilita(accessibilita=m.accessibilita)
 
-#    #links
-#    if len(m.links)>0:
-#        for link in m.links:
-#            if (len(link)>0):
-#                for l in link:
-#                    url = ""
-#                    titolo = ""
-#                    descrizione = ""
-#                    tipo = ""
-#                    if l.has_key('url'):
-#                        url = l['url']
-#                    if l.has_key('titolo'):
-#                        titolo = l['titolo']
-#                        if titolo is None:
-#                            titolo = ""
-#                    if l.has_key('descrizione'):
-#                        descrizione = l['descrizione']
-#                    if l.has_key('tipo'):
-#                        tipo = l['tipo']
-#                    linkssql = Links(codice_dbunico2=m.codice_dbunico2,url=url,titolo=titolo,descrizione=descrizione,tipo=tipo)
-#                    db.add(linkssql)
+    #links
+    #codice_dbunico2, url,ruolo, titolo,descrizione,descrizione
+    if len(m.links)>0:
+        for link in m.links:
+            if (len(link)>0):
+                for l in link:
+                    url = ""
+                    titolo = ""
+                    descrizione = ""
+                    tipo = ""
+                    if l.has_key('url'):
+                        url = l['url']
+                    if l.has_key('titolo'):
+                        titolo = l['titolo']
+                    if l.has_key('descrizione'):
+                        descrizione = l['descrizione']
+                    if l.has_key('tipo'):
+                        tipo = l['tipo']
+                    linkssql = Links(codice_dbunico2=m.codice_dbunico2,url=url,titolo=titolo,descrizione=descrizione,tipo=descrizione)
+                    db.add(linkssql)
     
     #Allegati
     #codice_dbunico2, copyright, url, ruolo, didascalia,mibacallegato,descrizione

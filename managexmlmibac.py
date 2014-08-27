@@ -2,7 +2,7 @@
 """
 Created on Sun Aug 10 19:33:28 2014
 
-@author: Maurizio Napolitano
+@author: Maurizio Napolitano <napo@fbk.eu>
 """
 import urllib2
 from lxml import etree
